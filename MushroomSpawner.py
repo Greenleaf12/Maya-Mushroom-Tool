@@ -130,10 +130,18 @@ def Mushroom(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidth, st
     cmds.select(clear=True)
     cmds.select('MushroomOriginal')
     
-    cmds.select(Cylinder[0]+'.f[548:589]')
-    cmds.hyperShade(assign = GrillShader)
-    cmds.select(Cylinder[0]+'.f[506:547]')
-    cmds.hyperShade(assign = GrillShader)
+    # Gill Shader
+    if stemBulge_Var:  
+        cmds.select(Cylinder[0]+'.f[548:589]')
+        cmds.hyperShade(assign = GrillShader)
+        cmds.select(Cylinder[0]+'.f[506:547]')
+        cmds.hyperShade(assign = GrillShader)
+    else:
+        cmds.select(Cylinder[0]+'.f[338:379]')
+        cmds.hyperShade(assign = GrillShader)
+        cmds.select(Cylinder[0]+'.f[380:421]')
+        cmds.hyperShade(assign = GrillShader)
+        
        
     #Add Noise 
     if noise_Var:
