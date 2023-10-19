@@ -1,3 +1,5 @@
+# Mushroom Tool By Rory Gardner
+
 import maya.cmds as cmds
 import random
 import re
