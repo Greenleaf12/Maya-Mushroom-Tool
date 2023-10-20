@@ -21,6 +21,57 @@ cmds.setAttr( GrillShader + '.color', 0.158, 1.092, 0.049, type = 'double3' )
 #DotShader = cmds.shadingNode( 'Blinn', asShader = True)    
 #cmds.setAttr( DotShader + '.color', 0.500, 0.440, 0.330, type = 'double3' )
 
+def objTerrainSpawn(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidth, stemWidth, moveStem, capSize, capSizeBase, stemRotate, capHeight, stemHeight, capBaseHeight, baseBulge, bendScale, mushroomAmount):
+    
+    if cmds.objExists('Terrain*'):
+        cmds.delete()
+    else:
+        Plane=cmds.polyPlane (w=250,h=250,sx=50,sy=50,name='Terrain')
+   
+    MushroomOrg1=Mushroom(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidth, stemWidth, moveStem, capSize, capSizeBase, stemRotate, capHeight, stemHeight, capBaseHeight, baseBulge, bendScale)
+    cmds.select("MushroomOriginal")
+    cmds.rename('MushroomOrg1')
+    MushroomOrg2=Mushroom(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidth, stemWidth, moveStem, capSize, capSizeBase, stemRotate, capHeight, stemHeight, capBaseHeight, baseBulge, bendScale)
+    cmds.select("MushroomOriginal")
+    cmds.rename('MushroomOrg2')
+    MushroomOrg3=Mushroom(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidth, stemWidth, moveStem, capSize, capSizeBase, stemRotate, capHeight, stemHeight, capBaseHeight, baseBulge, bendScale)
+    cmds.select("MushroomOriginal")
+    cmds.rename('MushroomOrg3')
+    MushroomOrg4=Mushroom(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidth, stemWidth, moveStem, capSize, capSizeBase, stemRotate, capHeight, stemHeight, capBaseHeight, baseBulge, bendScale)
+    cmds.select("MushroomOriginal")
+    cmds.rename('MushroomOrg4')
+    
+    terrainShape ="Terrain"
+
+    rockData = {"MushroomOrg1": mushroomAmount, "MushroomOrg2": mushroomAmount, "MushroomOrg3": mushroomAmount, "MushroomOrg4": mushroomAmount} 
+    
+    numVertex = cmds.polyEvaluate(terrainShape, vertex=True)
+    selectedVertices = random.sample(range(numVertex), numVertex)
+      
+    currentIndex = 0
+    for pair in rockData.items():
+        for i in range(pair[1]):
+            if currentIndex>numVertex-1:
+                break
+            pos = cmds.pointPosition (terrainShape+".vtx["+str(selectedVertices[currentIndex])+"]", world=True)
+            
+            newobj = cmds.instance(pair[0])
+            
+            cmds.move(pos[0],pos[1],pos[2],newobj)
+            #cmds.scale (rockscaleControl/random.uniform(0.5,2.0), rockscaleControl/random.uniform(0.5,2), rockscaleControl/random.uniform(0.5,2),newobj)
+            cmds.scale (random.uniform(0.8,1.2),random.uniform(0.5,2.0), random.uniform(0.8,1.2),newobj)
+            cmds.rotate(0, random.randint(0,360),0,newobj)
+            if pos[1] > 200:
+                cmds.delete(newobj) 
+                    
+            currentIndex+=1
+    
+    cmds.delete("MushroomOrg1", "MushroomOrg2", "MushroomOrg3", "MushroomOrg4")
+    
+    if cmds.objExists('MushroomOrg*'):
+        cmds.select("MushroomOrg*")
+        cmds.group(name="Mushrooms")
+
 def Mushroom(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidth, stemWidth, moveStem, capSize, capSizeBase, stemRotate, capHeight, stemHeight, capBaseHeight, baseBulge, bendScale):
        
     cmds.softSelect(sse=0, ssd = 1)
@@ -119,9 +170,8 @@ def Mushroom(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidth, st
     #cmds.scale(0.8,1.0,0.8, r=True)
     
     #Create Base
-    cmds.select(Cylinder[0]+'.f[42]')
- 
-    cmds.scale(3.5,1.5,3.5, r=True)
+    cmds.select(Cylinder[0]+'.f[42]') 
+    cmds.scale(2.2,2.2,2.2, r=True)
     cmds.select(Cylinder[0]+'.f[86:127]')
     cmds.scale(baseBulge,1.0,baseBulge, r=True)
     cmds.select(Cylinder[0]+'.f[170:211]')
@@ -129,6 +179,13 @@ def Mushroom(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidth, st
     cmds.polySubdivideFacet (dv=0) 
     cmds.select(clear=True)
     cmds.select('MushroomOriginal')
+    
+    #Create Bulb
+    cmds.select(Cylinder[0]+'.f[42]') 
+    cmds.move(0,-0.4,0, r=True) 
+    cmds.polyExtrudeFacet(s=(0.9,0.9,0.9), t=(0, -0.5, 0),  d=1)
+    cmds.polyExtrudeFacet(s=(0.8,0.8,0.8), t=(0, -0.4, 0),  d=1)
+    cmds.polyExtrudeFacet(s=(0.8,0.8,0.8), t=(0, -0.3, 0),  d=1)      
     
     # Gill Shader
     if stemBulge_Var:  
@@ -219,13 +276,14 @@ def createUI():
     if cmds.window(winID, exists = True):
         cmds.deleteUI(winID)
     winID = cmds.window( title = 'Mushroom Tool', w = 200, h = 100)
-    cmds.rowColumnLayout( numberOfRows=28, cs=[50,50], rs=[50,50], rh=[40,40], adjustableColumn=True)
+    cmds.rowColumnLayout( numberOfRows=28, cs=[10,10], rs=[10,10], rh=[40,40], adjustableColumn=True)
     
     cmds.text( label='Mushroom Tool', align='center', h=40, fn='boldLabelFont' )
-       
+    cmds.separator(h=10)    
     #Mushroom
-    cmds.separator(h=15)      
-    cmds.button(label = "Make Mushroom", h=40,command = lambda *args: Mushroom(winID, cmds.floatSliderGrp(noiseAmount, query=True, value=True), 
+  
+    cmds.button(label = "Make Mushroom", h=40,command = lambda *args: Mushroom(winID, 
+    cmds.floatSliderGrp(noiseAmount, query=True, value=True), 
     cmds.intSliderGrp(stemSections, query=True, value=True), 
     cmds.floatSliderGrp(mushroomHeight, query=True, value=True), 
     cmds.floatSliderGrp(mushroomWidth, query=True, value=True), 
@@ -241,45 +299,44 @@ def createUI():
     cmds.floatSliderGrp(bendScale, query=True, value=True))) 
      
     #Base
-    cmds.separator(h=15)  
+    cmds.separator(h=10)  
     cmds.text( label='Base Options', align='center', h=40, fn='boldLabelFont' )
+    cmds.separator(h=10)   
     mushroomHeight = cmds.floatSliderGrp(label='Base Height', minValue=0.1, maxValue=10, value=0.14, step=0.1, field=True)
     mushroomWidth = cmds.floatSliderGrp(label='Base Width', minValue=0.1, maxValue=2, value=0.5, step=0.1, field=True)
     baseBulge = cmds.floatSliderGrp(label='Base Bulge', minValue=1, maxValue=5, value=1.5, step=0.1, field=True)
     
     #Stem
-    cmds.separator(h=15)  
+    cmds.separator(h=10)  
     cmds.text( label='Stem Options', align='center', h=40, fn='boldLabelFont' )
+    cmds.separator(h=10) 
+    cmds.radioButtonGrp( label='Stem Skirt', labelArray2=['On', 'Off'], numberOfRadioButtons=2, h=25, 
+    onCommand1=lambda x:stemB(True), 
+    onCommand2=lambda x:stemB(False))
+    
     stemSections = cmds.intSliderGrp(label='Step Sections', minValue=1, maxValue=4, value=4, step=1, field=True) 
     stemHeight = cmds.floatSliderGrp(label='Stem Height', minValue=1.0, maxValue=5, value=1.0, step=0.1, pre=2, field=True)  
     stemWidth = cmds.floatSliderGrp(label='Stem Width', minValue=1.0, maxValue=4.0, value=2.0, step=0.1, pre=2, field=True)
     moveStem = cmds.floatSliderGrp(label='Stem Move', minValue=0.0, maxValue=2, value=0.0, step=0.1, pre=2, field=True)
     stemRotate = cmds.floatSliderGrp(label='Stem Bend', minValue=0.0, maxValue=15, value=0.0, step=0.1, pre=2, field=True)
     bendScale = cmds.floatSliderGrp(label='Stem Bend Scale', minValue=-2.0, maxValue=2, value=0.0, step=0.01, pre=2, field=True)
-    cmds.separator(h=15)  
-    cmds.text( label='Stem Bulge', align='center', h=40, fn='boldLabelFont' )
-    cmds.radioCollection()
-    cmds.radioButton( label='On', align='center',  onCommand=lambda x:stemB(True))
-    cmds.radioButton( label='Off', align='center', sl=True, onCommand=lambda x:stemB(False))
+ 
+
     
     #Cap 
-    cmds.separator(h=15)  
+    cmds.separator(h=10)  
     cmds.text( label='Cap Options', align='center', h=40, fn='boldLabelFont' )
+    cmds.separator(h=10)  
     capSize = cmds.floatSliderGrp(label='Cap Pointy', minValue=0.2, maxValue=1, value=0.8, step=0.01, pre=2, field=True)
     #capRoundness = cmds.floatSliderGrp(label='Cap Roundness', minValue=1, maxValue=100, value=80, step=1, field=True)
     capSizeBase = cmds.floatSliderGrp(label='Cap Base Size', minValue=1, maxValue=10, value=2.0, step=1, field=True)
     capHeight = cmds.floatSliderGrp(label='Cap Height', minValue=0.5, maxValue=3, value=1, step=0.1, field=True)
     capBaseHeight = cmds.floatSliderGrp(label='Cap Base Height', minValue=0.1, maxValue=2, value=0.2, step=0.1, field=True)
-    
-    #bender
-    cmds.separator(h=15)  
-    cmds.text( label='Bend', align='center', h=40, fn='boldLabelFont' )
-    cmds.button(label = "Bend Mushroom", h=40,command = lambda *args: bend(winID, cmds.floatSliderGrp(bendAmount, query=True, value=True)))
-    bendAmount = cmds.floatSliderGrp(label='Bend Amount', minValue=0.01, maxValue=35, value=0.05, step=0.01, pre=2, field=True)
    
     #Spots
-    cmds.separator(h=15)  
+    cmds.separator(h=10)  
     cmds.text( label='Spots', align='center', h=40, fn='boldLabelFont' )
+    cmds.separator(h=10) 
     cmds.button(label = "Make Spots", h=40,command = lambda *args: addSpots(winID, cmds.intSliderGrp(spotAmount, query=True, value=True),
     cmds.floatSliderGrp(spotSize, query=True, value=True), 
     cmds.intSliderGrp(spotSpread, query=True, value=True),
@@ -289,20 +346,39 @@ def createUI():
     spotSize = cmds.floatSliderGrp(label='Spot Size', minValue=0.01, maxValue=2, value=0.01, step=0.01, pre=2, field=True)
     spotSpread = cmds.intSliderGrp(label='Spot Spread', minValue=10, maxValue=200, value=80, step=1, field=True)
     spotStartPos = cmds.intSliderGrp(label='Spot Start Position', minValue=500, maxValue=12000, value=10500, step=1, field=True)
-    cmds.separator(h=15) 
+    cmds.separator(h=10) 
         
     #Noise
     cmds.text( label='Noise', align='center', h=40, fn='boldLabelFont' )
+    cmds.separator(h=10) 
     cmds.radioCollection()
     cmds.radioButton( label='On', align='center', sl=True, onCommand=lambda x:noise(True))
     cmds.radioButton( label='Off', align='center',  onCommand=lambda x:noise(False))
     noiseAmount = cmds.floatSliderGrp(label='Noise Amount', minValue=0.01, maxValue=1, value=0.05, step=0.01, pre=2, field=True)
     
-    cmds.separator(h=15)  
+    cmds.separator(h=25)  
     
+    cmds.button(label = "Spawn On Terrrain", h=40,command = lambda *args: objTerrainSpawn(winID, 
+    cmds.floatSliderGrp(noiseAmount, query=True, value=True), 
+    cmds.intSliderGrp(stemSections, query=True, value=True), 
+    cmds.floatSliderGrp(mushroomHeight, query=True, value=True), 
+    cmds.floatSliderGrp(mushroomWidth, query=True, value=True), 
+    cmds.floatSliderGrp(stemWidth, query=True, value=True), 
+    cmds.floatSliderGrp(moveStem, query=True, value=True),
+    cmds.floatSliderGrp(capSize, query=True, value=True),
+    cmds.floatSliderGrp(capSizeBase, query=True, value=True),
+    cmds.floatSliderGrp(stemRotate, query=True, value=True), 
+    cmds.floatSliderGrp(capHeight, query=True, value=True),
+    cmds.floatSliderGrp(stemHeight, query=True, value=True),          
+    cmds.floatSliderGrp(capBaseHeight, query=True, value=True), 
+    cmds.floatSliderGrp(baseBulge, query=True, value=True), 
+    cmds.floatSliderGrp(bendScale, query=True, value=True),
+    cmds.intSliderGrp(mushroomAmount, query=True, value=True)))
+    mushroomAmount = cmds.intSliderGrp(label='Mushroom Amount', minValue=1, maxValue=40, value=2, step=1, field=True)
+    cmds.separator(h=25)  
     #UV
     cmds.button(label = "UVs", h=40,command = lambda *args: uvw(winID))   
-         
+    cmds.separator(h=25)     
     #Remove All
     cmds.button(label = "Undo", h=40,command = lambda *args: undoAction(winID))   
     
