@@ -21,57 +21,6 @@ cmds.setAttr( GrillShader + '.color', 0.158, 1.092, 0.049, type = 'double3' )
 #DotShader = cmds.shadingNode( 'Blinn', asShader = True)    
 #cmds.setAttr( DotShader + '.color', 0.500, 0.440, 0.330, type = 'double3' )
 
-def objTerrainSpawn(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidth, stemWidth, moveStem, capSize, capSizeBase, stemRotate, capHeight, stemHeight, capBaseHeight, baseBulge, bendScale, mushroomAmount):
-    
-    if cmds.objExists('Terrain*'):
-        cmds.delete()
-    else:
-        Plane=cmds.polyPlane (w=250,h=250,sx=50,sy=50,name='Terrain')
-   
-    MushroomOrg1=Mushroom(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidth, stemWidth, moveStem, capSize, capSizeBase, stemRotate, capHeight, stemHeight, capBaseHeight, baseBulge, bendScale)
-    cmds.select("MushroomOriginal")
-    cmds.rename('MushroomOrg1')
-    MushroomOrg2=Mushroom(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidth, stemWidth, moveStem, capSize, capSizeBase, stemRotate, capHeight, stemHeight, capBaseHeight, baseBulge, bendScale)
-    cmds.select("MushroomOriginal")
-    cmds.rename('MushroomOrg2')
-    MushroomOrg3=Mushroom(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidth, stemWidth, moveStem, capSize, capSizeBase, stemRotate, capHeight, stemHeight, capBaseHeight, baseBulge, bendScale)
-    cmds.select("MushroomOriginal")
-    cmds.rename('MushroomOrg3')
-    MushroomOrg4=Mushroom(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidth, stemWidth, moveStem, capSize, capSizeBase, stemRotate, capHeight, stemHeight, capBaseHeight, baseBulge, bendScale)
-    cmds.select("MushroomOriginal")
-    cmds.rename('MushroomOrg4')
-    
-    terrainShape ="Terrain"
-
-    rockData = {"MushroomOrg1": mushroomAmount, "MushroomOrg2": mushroomAmount, "MushroomOrg3": mushroomAmount, "MushroomOrg4": mushroomAmount} 
-    
-    numVertex = cmds.polyEvaluate(terrainShape, vertex=True)
-    selectedVertices = random.sample(range(numVertex), numVertex)
-      
-    currentIndex = 0
-    for pair in rockData.items():
-        for i in range(pair[1]):
-            if currentIndex>numVertex-1:
-                break
-            pos = cmds.pointPosition (terrainShape+".vtx["+str(selectedVertices[currentIndex])+"]", world=True)
-            
-            newobj = cmds.instance(pair[0])
-            
-            cmds.move(pos[0],pos[1],pos[2],newobj)
-            #cmds.scale (rockscaleControl/random.uniform(0.5,2.0), rockscaleControl/random.uniform(0.5,2), rockscaleControl/random.uniform(0.5,2),newobj)
-            cmds.scale (random.uniform(0.8,1.2),random.uniform(0.5,2.0), random.uniform(0.8,1.2),newobj)
-            cmds.rotate(0, random.randint(0,360),0,newobj)
-            if pos[1] > 200:
-                cmds.delete(newobj) 
-                    
-            currentIndex+=1
-    
-    cmds.delete("MushroomOrg1", "MushroomOrg2", "MushroomOrg3", "MushroomOrg4")
-    
-    if cmds.objExists('MushroomOrg*'):
-        cmds.select("MushroomOrg*")
-        cmds.group(name="Mushrooms")
-
 def Mushroom(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidth, stemWidth, moveStem, capSize, capSizeBase, stemRotate, capHeight, stemHeight, capBaseHeight, baseBulge, bendScale):
        
     cmds.softSelect(sse=0, ssd = 1)
@@ -99,8 +48,7 @@ def Mushroom(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidth, st
         randomFloatScale = random.uniform(0.01,0.02)
         randomFloatX = random.uniform(-moveStem,moveStem)
         randomFloatY = random.uniform(0.1,0.2)
-        randomFloatZ = random.uniform(-moveStem,moveStem)
-        
+        randomFloatZ = random.uniform(-moveStem,moveStem)       
         randomFloatTopY = random.uniform(0.8,1.2)
         randomFloatTopYsmall = random.uniform(0.1,0.2)
         
@@ -156,7 +104,7 @@ def Mushroom(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidth, st
     polyInfoY = float(polyInfoArray[3])
     polyInfoZ = float(polyInfoArray[4])
     
-    cmds.polySubdivideFacet(dv=1)
+    #cmds.polySubdivideFacet(dv=1)
         
     for i in range (4):
        morph = random.uniform(-0.05,-0.1)
@@ -164,10 +112,7 @@ def Mushroom(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidth, st
        capSize = capRoundness * capSize / 100
        topStep -=0.2
        #polyInfoY -=0.2
-       cmds.hyperShade(assign = CapShader)
-       
-    #Scale top of Cap    
-    #cmds.scale(0.8,1.0,0.8, r=True)
+       cmds.hyperShade(assign = CapShader)       
     
     #Create Base
     cmds.select(Cylinder[0]+'.f[42]') 
@@ -187,7 +132,7 @@ def Mushroom(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidth, st
     cmds.polyExtrudeFacet(s=(0.8,0.8,0.8), t=(0, -0.4, 0),  d=1)
     cmds.polyExtrudeFacet(s=(0.8,0.8,0.8), t=(0, -0.3, 0),  d=1)      
     
-    # Gill Shader
+    #Gill Shader
     if stemBulge_Var:  
         cmds.select(Cylinder[0]+'.f[548:589]')
         cmds.hyperShade(assign = GrillShader)
@@ -198,8 +143,7 @@ def Mushroom(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidth, st
         cmds.hyperShade(assign = GrillShader)
         cmds.select(Cylinder[0]+'.f[380:421]')
         cmds.hyperShade(assign = GrillShader)
-        
-       
+             
     #Add Noise 
     if noise_Var:
         addNoise(noiseAmount)
@@ -224,7 +168,57 @@ def addSpots (winID, spotAmount, spotSize, spotSpread, spotStartPos):
         cmds.select(clear=True)
                
         capSelection +=spotSpread
-                
+
+    #Spawn On Terrain        
+def objTerrainSpawn(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidth, stemWidth, moveStem, capSize, capSizeBase, stemRotate, capHeight, stemHeight, capBaseHeight, baseBulge, bendScale, mushroomAmount):
+    
+    if cmds.objExists('Terrain*'):
+        cmds.delete()
+    else:
+        Plane=cmds.polyPlane (w=250,h=250,sx=50,sy=50,name='Terrain')
+   
+    MushroomOrg1=Mushroom(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidth, stemWidth, moveStem, capSize, capSizeBase, stemRotate, capHeight, stemHeight, capBaseHeight, baseBulge, bendScale)
+    cmds.select("MushroomOriginal")
+    cmds.rename('MushroomOrg1')
+    MushroomOrg2=Mushroom(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidth, stemWidth, moveStem, capSize, capSizeBase, stemRotate, capHeight, stemHeight, capBaseHeight, baseBulge, bendScale)
+    cmds.select("MushroomOriginal")
+    cmds.rename('MushroomOrg2')
+    MushroomOrg3=Mushroom(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidth, stemWidth, moveStem, capSize, capSizeBase, stemRotate, capHeight, stemHeight, capBaseHeight, baseBulge, bendScale)
+    cmds.select("MushroomOriginal")
+    cmds.rename('MushroomOrg3')
+    MushroomOrg4=Mushroom(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidth, stemWidth, moveStem, capSize, capSizeBase, stemRotate, capHeight, stemHeight, capBaseHeight, baseBulge, bendScale)
+    cmds.select("MushroomOriginal")
+    cmds.rename('MushroomOrg4')
+    
+    terrainShape ="Terrain"
+
+    rockData = {"MushroomOrg1": mushroomAmount, "MushroomOrg2": mushroomAmount, "MushroomOrg3": mushroomAmount, "MushroomOrg4": mushroomAmount} 
+    
+    numVertex = cmds.polyEvaluate(terrainShape, vertex=True)
+    selectedVertices = random.sample(range(numVertex), numVertex)
+      
+    currentIndex = 0
+    for pair in rockData.items():
+        for i in range(pair[1]):
+            if currentIndex>numVertex-1:
+                break
+            pos = cmds.pointPosition (terrainShape+".vtx["+str(selectedVertices[currentIndex])+"]", world=True)
+            
+            newobj = cmds.instance(pair[0])
+            
+            cmds.move(pos[0],pos[1],pos[2],newobj)
+            cmds.scale (random.uniform(0.8,1.2),random.uniform(0.5,2.0), random.uniform(0.8,1.2),newobj)
+            cmds.rotate(0, random.randint(0,360),0,newobj)
+            if pos[1] > 200:
+                cmds.delete(newobj)                   
+            currentIndex+=1
+    
+    cmds.delete("MushroomOrg1", "MushroomOrg2", "MushroomOrg3", "MushroomOrg4")
+    
+    if cmds.objExists('MushroomOrg*'):
+        cmds.select("MushroomOrg*")
+        cmds.group(name="Mushrooms")
+                        
 def bend(winID, bendAmount):   
     randomBend = random.uniform(-1.5,1.5)
     MushroomOriginal = 'MushroomOriginal'
@@ -276,7 +270,7 @@ def createUI():
     if cmds.window(winID, exists = True):
         cmds.deleteUI(winID)
     winID = cmds.window( title = 'Mushroom Tool', w = 200, h = 100)
-    cmds.rowColumnLayout( numberOfRows=28, cs=[10,10], rs=[10,10], rh=[40,40], adjustableColumn=True)
+    cmds.rowColumnLayout( numberOfRows=27, cs=[10,10], rs=[10,10], rh=[40,40], adjustableColumn=True)
     
     cmds.text( label='Mushroom Tool', align='center', h=40, fn='boldLabelFont' )
     cmds.separator(h=10)    
