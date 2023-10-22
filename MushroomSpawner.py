@@ -3,11 +3,14 @@
 import maya.cmds as cmds
 import random
 import re
+import MASH.api as mapi
 
 noiseAmount = 1.1
 noise_Var = True
 stemBulge_Var = False
 capRoundness = 80
+Terrain_Sphere_Var = False
+Terrain_Plane_Var = True
 
 StemShader = cmds.shadingNode( 'lambert', asShader = True)    
 cmds.setAttr( StemShader + '.color', 0.497, 0.426, 0.312, type = 'double3' )
@@ -26,9 +29,12 @@ def Mushroom(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidth, st
     cmds.softSelect(sse=0, ssd = 1)
         
     if cmds.objExists('MushroomOriginal'): 
-        cmds.select("MushroomOriginal")
-        cmds.delete()
-       
+        cmds.delete("MushroomOriginal")
+    if cmds.objExists('Terrain*'):
+        cmds.delete('Terrain*')    
+    if cmds.objExists('Mushrooms*'):
+        cmds.delete('Mushrooms')
+           
     #Random Numbers
     randomFloatScaleZXY = random.uniform(-0.1,0.1)
     
@@ -175,7 +181,8 @@ def objTerrainSpawn(winID, noiseAmount, stemSections, mushroomHeight, mushroomWi
     if cmds.objExists('Terrain*'):
         cmds.delete()
     else:
-        Plane=cmds.polyPlane (w=250,h=250,sx=50,sy=50,name='Terrain')
+        #Plane=cmds.polyPlane (w=250,h=250,sx=50,sy=50,name='Terrain')
+        sphere=cmds.polySphere (r=100,name='Terrain')
    
     MushroomOrg1=Mushroom(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidth, stemWidth, moveStem, capSize, capSizeBase, stemRotate, capHeight, stemHeight, capBaseHeight, baseBulge, bendScale)
     cmds.select("MushroomOriginal")
@@ -203,12 +210,16 @@ def objTerrainSpawn(winID, noiseAmount, stemSections, mushroomHeight, mushroomWi
             if currentIndex>numVertex-1:
                 break
             pos = cmds.pointPosition (terrainShape+".vtx["+str(selectedVertices[currentIndex])+"]", world=True)
-            
-            newobj = cmds.instance(pair[0])
-            
+            normalX = cmds.polyNormalPerVertex(terrainShape+".vtx["+str(selectedVertices[currentIndex])+"]", query=False, x=True)  
+            normalY = cmds.polyNormalPerVertex(terrainShape+".vtx["+str(selectedVertices[currentIndex])+"]", query=False, y=True)  
+            normalZ = cmds.polyNormalPerVertex(terrainShape+".vtx["+str(selectedVertices[currentIndex])+"]", query=False, z=True)  
+                                               
+            newobj = cmds.instance(pair[0])           
             cmds.move(pos[0],pos[1],pos[2],newobj)
+            #cmds.rotate(normalX,normalY,normalZ)
             cmds.scale (random.uniform(0.8,1.2),random.uniform(0.5,2.0), random.uniform(0.8,1.2),newobj)
             cmds.rotate(0, random.randint(0,360),0,newobj)
+
             if pos[1] > 200:
                 cmds.delete(newobj)                   
             currentIndex+=1
@@ -218,6 +229,51 @@ def objTerrainSpawn(winID, noiseAmount, stemSections, mushroomHeight, mushroomWi
     if cmds.objExists('MushroomOrg*'):
         cmds.select("MushroomOrg*")
         cmds.group(name="Mushrooms")
+
+    #Spawn on terrain (MASH)
+def mashMushrooms(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidth, stemWidth, moveStem, capSize, capSizeBase, stemRotate, capHeight, stemHeight, capBaseHeight, baseBulge, bendScale, mushroomAmount, mushroomScale):
+    
+    Mushroom(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidth, stemWidth, moveStem, capSize, capSizeBase, stemRotate, capHeight, stemHeight, capBaseHeight, baseBulge, bendScale)
+    
+    if cmds.objExists('Terrain*'):
+        cmds.delete()
+    if Terrain_Sphere_Var == True:       
+        sphere=cmds.polySphere (r=150, sy=80, sx=80, name='Terrain')
+    if Terrain_Plane_Var == True: 
+        Plane=cmds.polyPlane (w=250,h=250,sx=50,sy=50,name='Terrain')
+        
+    Terrain = "Terrain"
+    
+    if cmds.objExists('Mushrooms*'):
+        cmds.delete('Mushrooms')
+                 
+    cmds.select("MushroomOriginal")
+    
+    # create MASH network
+    mashNetwork = mapi.Network()
+    mashNetwork.createNetwork(name="Mushrooms")
+    mashNetwork.meshDistribute(Terrain)
+    
+    # set MASH points 
+    mashNetwork.setPointCount(mushroomAmount)
+    cmds.setAttr ("Mushrooms_Distribute.calcRotation", 1)
+    cmds.setAttr ("Mushrooms_Distribute.distanceAlongNormal", 0) 
+    
+    mashNetwork.addNode("MASH_Random")
+    cmds.setAttr ("Mushrooms_Random.rotationY", 5)
+    cmds.setAttr ("Mushrooms_Random.rotationX", 5)
+    cmds.setAttr ("Mushrooms_Random.rotationZ", 5)
+    cmds.setAttr ("Mushrooms_Random.scaleX", mushroomScale)
+    cmds.setAttr ("Mushrooms_Random.scaleY", mushroomScale)
+    cmds.setAttr ("Mushrooms_Random.scaleZ", mushroomScale)
+    cmds.setAttr ("Mushrooms_Random.absoluteScale", 1)
+    cmds.setAttr ("Mushrooms_Random.uniformRandom", 1)
+    
+    nodes = mashNetwork.getAllNodesInNetwork()
+    
+    for node in nodes:
+        mashNode = mapi.Node(node)
+        falloffs = mashNode.getFalloffs()               
                         
 def bend(winID, bendAmount):   
     randomBend = random.uniform(-1.5,1.5)
@@ -249,7 +305,15 @@ def addNoise(noiseAmount):
         optimize_setter += [values[mod-1]*1,values[mod-1]*1,values[mod-1]*1]
     cmds.setAttr('MushroomOriginal.vtx[:]', *optimize_setter)
     cmds.polySmooth(c=1,dv=2,kb=True,ro=1)  
-  
+
+def tSphere(TSphereInput):
+    global Terrain_Sphere_Var
+    Terrain_Sphere_Var = TSphereInput    
+        
+def tPlane(TPlaneInput):
+    global Terrain_Plane_Var
+    Terrain_Plane_Var = TPlaneInput
+      
 def uvw(winID):
     
     cmds.select("MushroomOriginal")
@@ -257,7 +321,7 @@ def uvw(winID):
     cmds.polyProjection('MushroomOriginal.f[*]', type='Cylindrical', ch=1, ibd=True, sf=True)         
      
 	#Close UI
-def cancelProc(winID, *pArgs):
+def exitProgram(winID, *pArgs):
     cmds.deleteUI(winID)
     
 def undoAction(winID):   
@@ -269,13 +333,13 @@ def createUI():
     winID = cmds.window( title = 'Mushroom Tool', w = 350, h = 100)
     if cmds.window(winID, exists = True):
         cmds.deleteUI(winID)
-    winID = cmds.window( title = 'Mushroom Tool', w = 200, h = 100)
+    winID = cmds.window( title = 'Mushroom Tool', w = 350, h = 100)
     cmds.rowColumnLayout( numberOfRows=27, cs=[10,10], rs=[10,10], rh=[40,40], adjustableColumn=True)
     
     cmds.text( label='Mushroom Tool', align='center', h=40, fn='boldLabelFont' )
-    cmds.separator(h=10)    
-    #Mushroom
-  
+    cmds.separator(h=10) 
+       
+    #Mushroom 
     cmds.button(label = "Make Mushroom", h=40,command = lambda *args: Mushroom(winID, 
     cmds.floatSliderGrp(noiseAmount, query=True, value=True), 
     cmds.intSliderGrp(stemSections, query=True, value=True), 
@@ -304,7 +368,7 @@ def createUI():
     cmds.separator(h=10)  
     cmds.text( label='Stem Options', align='center', h=40, fn='boldLabelFont' )
     cmds.separator(h=10) 
-    cmds.radioButtonGrp( label='Stem Skirt', labelArray2=['On', 'Off'], numberOfRadioButtons=2, h=25, 
+    cmds.radioButtonGrp( label='Stem Skirt', labelArray2=['On', 'Off'], numberOfRadioButtons=2, h=40, 
     onCommand1=lambda x:stemB(True), 
     onCommand2=lambda x:stemB(False))
     
@@ -314,9 +378,7 @@ def createUI():
     moveStem = cmds.floatSliderGrp(label='Stem Move', minValue=0.0, maxValue=2, value=0.0, step=0.1, pre=2, field=True)
     stemRotate = cmds.floatSliderGrp(label='Stem Bend', minValue=0.0, maxValue=15, value=0.0, step=0.1, pre=2, field=True)
     bendScale = cmds.floatSliderGrp(label='Stem Bend Scale', minValue=-2.0, maxValue=2, value=0.0, step=0.01, pre=2, field=True)
- 
-
-    
+  
     #Cap 
     cmds.separator(h=10)  
     cmds.text( label='Cap Options', align='center', h=40, fn='boldLabelFont' )
@@ -344,15 +406,14 @@ def createUI():
         
     #Noise
     cmds.text( label='Noise', align='center', h=40, fn='boldLabelFont' )
-    cmds.separator(h=10) 
-    cmds.radioCollection()
-    cmds.radioButton( label='On', align='center', sl=True, onCommand=lambda x:noise(True))
-    cmds.radioButton( label='Off', align='center',  onCommand=lambda x:noise(False))
+    cmds.separator(h=10)
+    cmds.radioButtonGrp( label='Noise', labelArray2=['On', 'Off'], numberOfRadioButtons=2, h=40, onCommand1=lambda x:noise(True), onCommand2=lambda x:noise(False), sl=1) 
     noiseAmount = cmds.floatSliderGrp(label='Noise Amount', minValue=0.01, maxValue=1, value=0.05, step=0.01, pre=2, field=True)
     
     cmds.separator(h=25)  
     
-    cmds.button(label = "Spawn On Terrrain", h=40,command = lambda *args: objTerrainSpawn(winID, 
+    #Terrain Spawn MASH
+    cmds.button(label = "Spawn On Terrain (MASH)", h=40,command = lambda *args: mashMushrooms(winID, 
     cmds.floatSliderGrp(noiseAmount, query=True, value=True), 
     cmds.intSliderGrp(stemSections, query=True, value=True), 
     cmds.floatSliderGrp(mushroomHeight, query=True, value=True), 
@@ -367,19 +428,30 @@ def createUI():
     cmds.floatSliderGrp(capBaseHeight, query=True, value=True), 
     cmds.floatSliderGrp(baseBulge, query=True, value=True), 
     cmds.floatSliderGrp(bendScale, query=True, value=True),
-    cmds.intSliderGrp(mushroomAmount, query=True, value=True)))
-    mushroomAmount = cmds.intSliderGrp(label='Mushroom Amount', minValue=1, maxValue=40, value=2, step=1, field=True)
-    cmds.separator(h=25)  
-    #UV
-    cmds.button(label = "UVs", h=40,command = lambda *args: uvw(winID))   
-    cmds.separator(h=25)     
-    #Remove All
-    cmds.button(label = "Undo", h=40,command = lambda *args: undoAction(winID))   
+    cmds.intSliderGrp(mushroomAmount, query=True, value=True),
+    cmds.intSliderGrp(mushroomScale, query=True, value=True)))
     
+    cmds.radioButtonGrp( label='Terrain Shape ',  labelArray3=['Plane', 'Sphere', 'None'], numberOfRadioButtons=3, h=50, 
+    on1=lambda x:tPlane(True), sl=1, 
+    on2=lambda x:tSphere(True),
+    of1=lambda x:tPlane(False), 
+    of2=lambda x:tSphere(False))
+    
+    mushroomAmount = cmds.intSliderGrp(label='Mushroom Amount', minValue=1, maxValue=250, value=25, step=1, field=True)
+    mushroomScale = cmds.intSliderGrp(label='Mushroom Sale', minValue=1, maxValue=100, value=1, step=1, field=True)
+    
+    cmds.separator(h=25)  
+    
+    #UV
+    cmds.button(label = "Create UVs", h=40,command = lambda *args: uvw(winID))   
+    cmds.separator(h=25)   
+      
+    #Remove All
+    cmds.button(label = "Undo", h=40,command = lambda *args: undoAction(winID))       
     cmds.separator(h=25) 
      
     #Exit    
-    cmds.button(label = "Exit", h=40, command = lambda *args: cancelProc(winID))
+    cmds.button(label = "Exit", h=40, command = lambda *args: exitProgram(winID))
     cmds.showWindow()    
 
 if __name__ == "__main__":
