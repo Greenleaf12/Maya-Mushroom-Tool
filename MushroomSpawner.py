@@ -176,13 +176,10 @@ def addSpots (winID, spotAmount, spotSize, spotSpread, spotStartPos):
         capSelection +=spotSpread
 
     #Spawn On Terrain        
-def objTerrainSpawn(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidth, stemWidth, moveStem, capSize, capSizeBase, stemRotate, capHeight, stemHeight, capBaseHeight, baseBulge, bendScale, mushroomAmount):
+def objTerrainSpawn(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidth, stemWidth, moveStem, capSize, capSizeBase, stemRotate, capHeight, stemHeight, capBaseHeight, baseBulge, bendScale, mushroomAmount, mushroomScale):
     
     if cmds.objExists('Terrain*'):
-        cmds.delete()
-    else:
-        #Plane=cmds.polyPlane (w=250,h=250,sx=50,sy=50,name='Terrain')
-        sphere=cmds.polySphere (r=100,name='Terrain')
+        cmds.delete()    
    
     MushroomOrg1=Mushroom(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidth, stemWidth, moveStem, capSize, capSizeBase, stemRotate, capHeight, stemHeight, capBaseHeight, baseBulge, bendScale)
     cmds.select("MushroomOriginal")
@@ -197,6 +194,7 @@ def objTerrainSpawn(winID, noiseAmount, stemSections, mushroomHeight, mushroomWi
     cmds.select("MushroomOriginal")
     cmds.rename('MushroomOrg4')
     
+    Plane=cmds.polyPlane(w=250,h=250,sx=50,sy=50,name='Terrain')
     terrainShape ="Terrain"
 
     rockData = {"MushroomOrg1": mushroomAmount, "MushroomOrg2": mushroomAmount, "MushroomOrg3": mushroomAmount, "MushroomOrg4": mushroomAmount} 
@@ -210,16 +208,17 @@ def objTerrainSpawn(winID, noiseAmount, stemSections, mushroomHeight, mushroomWi
             if currentIndex>numVertex-1:
                 break
             pos = cmds.pointPosition (terrainShape+".vtx["+str(selectedVertices[currentIndex])+"]", world=True)
-            normalX = cmds.polyNormalPerVertex(terrainShape+".vtx["+str(selectedVertices[currentIndex])+"]", query=False, x=True)  
-            normalY = cmds.polyNormalPerVertex(terrainShape+".vtx["+str(selectedVertices[currentIndex])+"]", query=False, y=True)  
-            normalZ = cmds.polyNormalPerVertex(terrainShape+".vtx["+str(selectedVertices[currentIndex])+"]", query=False, z=True)  
+            #normalX = cmds.polyNormalPerVertex(terrainShape+".vtx["+str(selectedVertices[currentIndex])+"]", query=False, x=True)  
+            #normalY = cmds.polyNormalPerVertex(terrainShape+".vtx["+str(selectedVertices[currentIndex])+"]", query=False, y=True)  
+            #normalZ = cmds.polyNormalPerVertex(terrainShape+".vtx["+str(selectedVertices[currentIndex])+"]", query=False, z=True)  
                                                
             newobj = cmds.instance(pair[0])           
             cmds.move(pos[0],pos[1],pos[2],newobj)
             #cmds.rotate(normalX,normalY,normalZ)
-            cmds.scale (random.uniform(0.8,1.2),random.uniform(0.5,2.0), random.uniform(0.8,1.2),newobj)
+            cmds.scale (mushroomScale+random.uniform(0.8,1.2),mushroomScale+random.uniform(0.5,2.0),mushroomScale+random.uniform(0.8,1.2),newobj)
             cmds.rotate(0, random.randint(0,360),0,newobj)
-
+            
+            #Delete if too high
             if pos[1] > 200:
                 cmds.delete(newobj)                   
             currentIndex+=1
@@ -257,12 +256,12 @@ def mashMushrooms(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidt
     # set MASH points 
     mashNetwork.setPointCount(mushroomAmount)
     cmds.setAttr ("Mushrooms_Distribute.calcRotation", 1)
-    cmds.setAttr ("Mushrooms_Distribute.distanceAlongNormal", 0) 
+    cmds.setAttr ("Mushrooms_Distribute.distanceAlongNormal", 1) 
     
     mashNetwork.addNode("MASH_Random")
-    cmds.setAttr ("Mushrooms_Random.rotationY", 5)
-    cmds.setAttr ("Mushrooms_Random.rotationX", 5)
-    cmds.setAttr ("Mushrooms_Random.rotationZ", 5)
+    cmds.setAttr ("Mushrooms_Random.rotationX", 10)
+    cmds.setAttr ("Mushrooms_Random.rotationY", 180)
+    cmds.setAttr ("Mushrooms_Random.rotationZ", 10)
     cmds.setAttr ("Mushrooms_Random.scaleX", mushroomScale)
     cmds.setAttr ("Mushrooms_Random.scaleY", mushroomScale)
     cmds.setAttr ("Mushrooms_Random.scaleZ", mushroomScale)
@@ -273,8 +272,18 @@ def mashMushrooms(winID, noiseAmount, stemSections, mushroomHeight, mushroomWidt
     
     for node in nodes:
         mashNode = mapi.Node(node)
-        falloffs = mashNode.getFalloffs()               
-                        
+        falloffs = mashNode.getFalloffs() 
+                      
+    # Create basic lights
+def basicLighting(winID):   
+
+    directLight = cmds.directionalLight(rotation=(-33, 0, -52), intensity=8.0, n='Light1')
+    cmds.setAttr('Light1.color', 1.0, 0.813, 0.391, type = 'double3')
+    directLight2 = cmds.directionalLight(rotation=(-145.041, 12.882, 0.980), intensity=2.0, n='Light2')
+    cmds.setAttr('Light2.color', 0.731, 0.979, 1.0, type = 'double3')
+    directLight3 = cmds.directionalLight(rotation=(-4.090733, 0, 0), intensity=1.5, n='Light3')
+    cmds.setAttr('Light3.color', 0.474279, 0.82, 0.32062, type = 'double3')
+                            
 def bend(winID, bendAmount):   
     randomBend = random.uniform(-1.5,1.5)
     MushroomOriginal = 'MushroomOriginal'
@@ -396,8 +405,7 @@ def createUI():
     cmds.button(label = "Make Spots", h=40,command = lambda *args: addSpots(winID, cmds.intSliderGrp(spotAmount, query=True, value=True),
     cmds.floatSliderGrp(spotSize, query=True, value=True), 
     cmds.intSliderGrp(spotSpread, query=True, value=True),
-    cmds.intSliderGrp(spotStartPos, query=True, value=True))) 
-      
+    cmds.intSliderGrp(spotStartPos, query=True, value=True)))       
     spotAmount = cmds.intSliderGrp(label='Spot Amount', minValue=1, maxValue=100, value=20, step=1, field=True)
     spotSize = cmds.floatSliderGrp(label='Spot Size', minValue=0.01, maxValue=2, value=0.01, step=0.01, pre=2, field=True)
     spotSpread = cmds.intSliderGrp(label='Spot Spread', minValue=10, maxValue=200, value=80, step=1, field=True)
@@ -410,7 +418,7 @@ def createUI():
     cmds.radioButtonGrp( label='Noise', labelArray2=['On', 'Off'], numberOfRadioButtons=2, h=40, onCommand1=lambda x:noise(True), onCommand2=lambda x:noise(False), sl=1) 
     noiseAmount = cmds.floatSliderGrp(label='Noise Amount', minValue=0.01, maxValue=1, value=0.05, step=0.01, pre=2, field=True)
     
-    cmds.separator(h=25)  
+    cmds.separator(h=10)  
     
     #Terrain Spawn MASH
     cmds.button(label = "Spawn On Terrain (MASH)", h=40,command = lambda *args: mashMushrooms(winID, 
@@ -439,16 +447,39 @@ def createUI():
     
     mushroomAmount = cmds.intSliderGrp(label='Mushroom Amount', minValue=1, maxValue=250, value=25, step=1, field=True)
     mushroomScale = cmds.intSliderGrp(label='Mushroom Sale', minValue=1, maxValue=100, value=1, step=1, field=True)
+    cmds.separator(h=15) 
+     
+    #Terrain Spawn
+    cmds.button(label = "Spawn On Terrain (Plane only)", h=40,command = lambda *args: objTerrainSpawn(winID, 
+    cmds.floatSliderGrp(noiseAmount, query=True, value=True), 
+    cmds.intSliderGrp(stemSections, query=True, value=True), 
+    cmds.floatSliderGrp(mushroomHeight, query=True, value=True), 
+    cmds.floatSliderGrp(mushroomWidth, query=True, value=True), 
+    cmds.floatSliderGrp(stemWidth, query=True, value=True), 
+    cmds.floatSliderGrp(moveStem, query=True, value=True),
+    cmds.floatSliderGrp(capSize, query=True, value=True),
+    cmds.floatSliderGrp(capSizeBase, query=True, value=True),
+    cmds.floatSliderGrp(stemRotate, query=True, value=True), 
+    cmds.floatSliderGrp(capHeight, query=True, value=True),
+    cmds.floatSliderGrp(stemHeight, query=True, value=True),          
+    cmds.floatSliderGrp(capBaseHeight, query=True, value=True), 
+    cmds.floatSliderGrp(baseBulge, query=True, value=True), 
+    cmds.floatSliderGrp(bendScale, query=True, value=True),
+    cmds.intSliderGrp(mushroomAmount, query=True, value=True),
+    cmds.intSliderGrp(mushroomScale, query=True, value=True)))      
+    cmds.separator(h=15)  
     
-    cmds.separator(h=25)  
-    
+    #Baisc lights
+    cmds.button(label = "Create Basic Lighting Setup", h=30,command = lambda *args: basicLighting(winID)) 
+    cmds.separator(h=15)   
+       
     #UV
     cmds.button(label = "Create UVs", h=40,command = lambda *args: uvw(winID))   
-    cmds.separator(h=25)   
+    cmds.separator(h=15)   
       
     #Remove All
     cmds.button(label = "Undo", h=40,command = lambda *args: undoAction(winID))       
-    cmds.separator(h=25) 
+    cmds.separator(h=15) 
      
     #Exit    
     cmds.button(label = "Exit", h=40, command = lambda *args: exitProgram(winID))
