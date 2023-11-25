@@ -369,8 +369,8 @@ def createUI():
     cmds.separator(h=10)  
     cmds.text( label='Base Options', align='center', h=40, fn='boldLabelFont' )
     cmds.separator(h=10)   
-    mushroomHeight = cmds.floatSliderGrp(label='Base Height', minValue=0.1, maxValue=10, value=0.14, step=0.1, field=True)
-    mushroomWidth = cmds.floatSliderGrp(label='Base Width', minValue=0.1, maxValue=2, value=0.5, step=0.1, field=True)
+    mushroomHeight = cmds.floatSliderGrp(label='Base Height', minValue=0.1, maxValue=1, value=0.14, step=0.1, field=True)
+    mushroomWidth = cmds.floatSliderGrp(label='Base Width', minValue=0.1, maxValue=1, value=0.5, step=0.1, field=True)
     baseBulge = cmds.floatSliderGrp(label='Base Bulge', minValue=1, maxValue=5, value=1.5, step=0.1, field=True)
     
     #Stem
@@ -469,21 +469,39 @@ def createUI():
     cmds.intSliderGrp(mushroomScale, query=True, value=True)))      
     cmds.separator(h=15)  
     
+    #Edit Mushroom
+    cmds.text( label='Edit Mushroom', align='center', h=40, fn='boldLabelFont' )
+    cmds.separator(h=10)
+    editStemHeightAmount = cmds.floatSliderGrp(label='Edit Stem Height', minValue=0.0, maxValue=2, value=0.0, step=0.1, pre=2, field=True, dragCommand = lambda *args: editStemHeight(winID, cmds.floatSliderGrp(editStemHeightAmount, query=True, value=True)), cc = lambda *args: editStemHeight(winID, cmds.floatSliderGrp(editStemHeightAmount, query=True, value=True)))  
+    editStemWidthAmount = cmds.floatSliderGrp(label='Edit Stem Width', minValue=0.0, maxValue=2, value=0.0, step=0.1, pre=2, field=True, dragCommand = lambda *args: editStemWidth(winID, cmds.floatSliderGrp(editStemWidthAmount, query=True, value=True)), cc = lambda *args: editStemWidth(winID, cmds.floatSliderGrp(editStemWidthAmount, query=True, value=True)))  
+
+    cmds.separator(h=10)
+    
     #Baisc lights
     cmds.button(label = "Create Basic Lighting Setup", h=30,command = lambda *args: basicLighting(winID)) 
-    cmds.separator(h=15)   
+    cmds.separator(h=10)   
        
     #UV
     cmds.button(label = "Create UVs", h=40,command = lambda *args: uvw(winID))   
-    cmds.separator(h=15)   
+    cmds.separator(h=10)   
       
     #Remove All
     cmds.button(label = "Undo", h=40,command = lambda *args: undoAction(winID))       
-    cmds.separator(h=15) 
+    cmds.separator(h=10) 
      
     #Exit    
     cmds.button(label = "Exit", h=40, command = lambda *args: exitProgram(winID))
-    cmds.showWindow()    
+    cmds.showWindow()   
+    
+    def editStemHeight(winID, editStemHeightAmount):
+        MushroomOriginal = "MushroomOriginal"
+        cmds.select(MushroomOriginal)
+        cmds.scale(1,editStemHeightAmount,1)
+        
+    def editStemWidth(winID, editStemWidthAmount):
+        MushroomOriginal = "MushroomOriginal"
+        cmds.select(MushroomOriginal)
+        cmds.scale(editStemWidthAmount,1,editStemWidthAmount)
 
 if __name__ == "__main__":
     createUI()
